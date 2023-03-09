@@ -18,24 +18,33 @@ class ComputerDB extends Simulation {
 		.upgradeInsecureRequestsHeader("1")
 		.userAgentHeader("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36")
 
+	val search = exec(http("Home")
+		.get("/computers"))
+		.pause(1)
+		.exec(http("Search")
+			.get("/computers?f=ace"))
+		.pause(2)
+		.exec(http("Select")
+			.get("/computers/381"))
+		.pause(2)
 
-	val scn = scenario("ComputerDB")
-		.exec(http("ComputerDataBasePage")
-			.get("/computers"))
-		.pause(3)
-		.exec(http("NewComputerPage")
-			.get("/computers/new"))
-		.pause(21)
-		.exec(http("CreateNewComputer")
-			.post("/computers")
-			.formParam("name", "Apple 1")
-			.formParam("introduced", "2000-01-01")
-			.formParam("discontinued", "2030-01-01")
-			.formParam("company", "1"))
-		.pause(duration = 10)
-		.exec(http("FilterComputer")
-			.get("/computers?f=MyComputers1")
-		)
+	val edit = exec(http("Edit")
+		.post("/computers/381")
+		.formParam("name", "ace")
+		.formParam("introduced", "2020-01-01")
+		.formParam("discontinued", "2030-01-01")
+		.formParam("company", "2"))
+		.pause(2)
 
-	setUp(scn.inject(atOnceUsers(1))).protocols(httpProtocol)
+	val scn = scenario("ComputerDB").exec(search,edit)
+
+	val users = scenario("Users").exec(search)
+	val admins = scenario("Admins").exec(search,edit)
+
+	setUp(
+		users.inject(rampUsers(10).during(10)),
+		admins.inject(rampUsers(4).during(10))
+	).protocols(httpProtocol)
+
+	//setUp(scn.inject(atOnceUsers(1))).protocols(httpProtocol)
 }
