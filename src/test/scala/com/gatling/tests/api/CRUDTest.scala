@@ -25,25 +25,37 @@ class CRUDTest extends Simulation {
 //          |}
 //          |""".stripMargin)).asJson
       .check(
-        status is (201),
-        jsonPath("$.name") is "Bambang"
+        status.is(201),
+        jsonPath("$.name").is("Bambang")
       )
     )
+    .pause(10)
 
-  val updateUserScn = scenario ("Update User")
+  val updateUserScn = scenario("Update User")
     .exec(http("update user req")
       .put("/update/users/2")
       .body(RawFileBody("test/data/user.json")).asJson
       .check(
-        status is 200,
-        jsonPath("$.name") is "Bambang"
+        status.is(200),
+        jsonPath("$.name").is("Bambang")
+      )
+    )
+    .pause(5)
+
+  val getUserScn = scenario("Get User")
+    .exec(http("get user req")
+      .get("/users/2")
+      .check(
+        status.is(200),
+        jsonPath("$.data.first_name").is("Janet")
       )
     )
 
   //setup
   setUp(
     createUserScn.inject(rampUsers(10).during(10)),
-    updateUserScn.inject(rampUsers(5).during(5))
+    updateUserScn.inject(rampUsers(5).during(5)),
+    getUserScn.inject(rampUsers(5).during(5))
     ).protocols(httpProtocol)
 
 }
